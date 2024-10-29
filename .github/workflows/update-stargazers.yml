@@ -1,0 +1,38 @@
+name: Update Stargazers
+
+on:
+  schedule:
+    - cron: '0 0 * * *'  # Runs daily at midnight UTC
+  workflow_dispatch:       # Allows manual run
+
+jobs:
+  update-stargazers:
+    runs-on: ubuntu-latest
+
+    steps:
+      - name: Checkout Repository
+        uses: actions/checkout@v2
+
+      - name: Fetch Stargazers
+        env:
+          REPO: "ayush-that/FinVeda"  # Replace with your repo name if different
+        run: |
+          # Start the markdown file
+          echo "<p align=\"center\">" > stargazers.md
+          # Fetch stargazers using GitHub API and generate links with avatars
+          curl -s -H "Accept: application/vnd.github.v3+json" "https://api.github.com/repos/$REPO/stargazers" | \
+          jq -r '.[] | "<a href=\"\(.html_url)\"><img src=\"\(.avatar_url)&s=40\" width=\"40\" height=\"40\" alt=\"stargazer\"></a>"' \
+          >> stargazers.md
+          # Close the markdown file
+          echo "</p>" >> stargazers.md
+
+      - name: Update README
+        run: |
+          # Insert stargazers.md content in README.md under the Stargazers section
+          sed -i '/## 💗 Stargazers/r stargazers.md' README.md
+          # Configure git and commit the changes
+          git config --global user.name "GitHub Action"
+          git config --global user.email "action@github.com"
+          git add README.md
+          git commit -m "Update stargazers section"
+          git push
